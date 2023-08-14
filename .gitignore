@@ -1,0 +1,26 @@
+# fuck you git, use https://theapache64.github.io/git-do-not-ignore/
+!media/
+media/*
+!media/videos/
+media/videos/*
+!media/videos/p00/
+media/videos/p00/*
+!media/videos/p01/
+media/videos/p01/*
+!media/videos/p00/1080p144/
+media/videos/p00/1080p144/*
+!media/videos/p00/1080p144/p00_0.mp4
+!media/videos/p01/1080p144/
+media/videos/p01/1080p144/*
+!media/videos/p01/1080p144/p01_0.mp4
+!media/videos/p01/1080p144/p01_1.mp4
+!media/videos/p01/1080p144/p01_2.mp4
+!media/videos/p01/1080p144/p01_3.mp4
+p00_assets
+p01_assets
+slides
+venv
+.idea
+__pycache__/
+p00.html
+p01.html
