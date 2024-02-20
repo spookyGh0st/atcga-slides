@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from sympy import symbols
 import sympy as sympy
 
-basis_colors = [PURPLE, ORANGE, GREEN, MAROON, TEAL]
+N = 4
+basis_colors = [PURPLE, ORANGE, GREEN, MAROON]
+
 @dataclass
 class polynomial:
     # Name
@@ -77,28 +79,45 @@ r_axes = Axes(
     tips=False,
 ).to_edge(RIGHT)
 
-def plot_pol_r(p: polynomial):
+r_axes_norm = Axes(
+    x_range=[-0.5, 1.51, 1],
+    y_range=[-0.5, 1.51, 1],
+    x_length=6,
+    y_length=6,
+    x_axis_config={
+        "numbers_to_include": np.arange(-0.0, 1.51, 1),
+        "numbers_with_elongated_ticks": np.arange(-0.0, 1.51, 1),
+    },
+    y_axis_config={
+        "numbers_to_include": np.arange(-0.0, 1.51, 1),
+        "numbers_with_elongated_ticks": np.arange(-0.0, 1.51, 1),
+    },
+    tips=False,
+).to_edge(RIGHT)
+
+def plot_pol_r(p: polynomial, axes = r_axes):
     def f(t):
         x = 0
         for i in range(len(p.c)):
             x += p.c[i] * (t**i)
         return x
-    return r_axes.plot(lambda t: f(t),x_range=r_axes.x_range,color=p.col)
-def plot_pol_basis_r(p: polynomial):
+    return axes.plot(lambda t: f(t),color=p.col)
+def plot_pol_basis_r(p: polynomial, axes = r_axes):
     def f(t):
         x = 0
         for i in range(len(p.c)):
             x += p.c[i] * (t**i)
         return x
-    return r_axes.plot(lambda t: f(t),color=p.col,stroke_opacity=1.0,stroke_width=DEFAULT_STROKE_WIDTH/2)
+    return axes.plot(lambda t: f(t),color=p.col,stroke_width=DEFAULT_STROKE_WIDTH/2)
 
 buff1 = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER
 buff2 = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER*2
 
+#=======================================
+#   Lagrange
+#=======================================
 def lagrange_coefficients(n, i):
     x = symbols('x')
-
-
     numerator = 1
     denominator = 1
     for m in range(n):
@@ -111,17 +130,52 @@ def lagrange_coefficients(n, i):
     c.reverse()
     return c
 
-def bezier_coefficients(n, i):
+
+
+def lagrange_basis(i, n):
+    c = lagrange_coefficients(n, i)
+    return polynomial("e_" + str(i), c, basis_colors[i])
+
+
+lagrange_polynomials = [
+    lagrange_basis(i, N)
+    for i in range(N)
+]
+lagrange_plots = [
+    plot_pol_basis_r(p)
+    for p in lagrange_polynomials
+]
+
+#=======================================
+#   Bezier Basis
+#=======================================
+def bezier_coefficients(i,n):
     x = symbols('x')
     basis_polynomial = sympy.functions.combinatorial.factorials.binomial(n,i) * (x**i) * ((1-x)**(n-i))
     c = basis_polynomial.as_poly().all_coeffs()
     c.reverse()
     return c
+
+def bezier_basis(i, n):
+    c = bezier_coefficients(i,n-1)
+    return polynomial("e_" + str(i), c, basis_colors[i])
+
+
+bezier_polynomials = [
+    bezier_basis(i, N)
+    for i in range(N)
+]
+bezier_plots = [
+    plot_pol_basis_r(p, r_axes_norm)
+    for p in bezier_polynomials
+]
+
+
 class p02_0(Scene):
     def construct(self):
         global r_axes, r_axes_norm
         self.add(l_axes, r_axes,Line(UP*5, DOWN*5))
-        p_data = [ValueTracker(1),ValueTracker(1), ValueTracker(0), ValueTracker(0), ValueTracker(0)]
+        p_data = [ValueTracker(1),ValueTracker(1), ValueTracker(0), ValueTracker(0)]
 
         def canonical_basis(i, n):
             c = [0.0] * n
@@ -187,12 +241,11 @@ class p02_0(Scene):
             for i in range(len(p_data))
         ]
         self.play(Create(VGroup(*e_dots)),Create(VGroup(*e_tex)),run_time=2)
-        self.play(*[Create(e) for e in e_plots],run_time=2)
+        self.play(*[Create(e) for e in e_plots[2:]],run_time=2)
         self.wait(2)
 
         self.play(p_data[2].animate.set_value( 0.5),run_time=1)
         self.play(p_data[3].animate.set_value( 0.5),run_time=1)
-        self.play(p_data[4].animate.set_value(-0.2),run_time=1)
         self.wait(2)
 
 
@@ -200,22 +253,10 @@ class p02_0(Scene):
             p_data[1].animate.set_value( 0),
             p_data[2].animate.set_value(0),
             p_data[3].animate.set_value(0),
-            p_data[4].animate.set_value(0),
             *[FadeOut(e) for e in e_plots],
             run_time=1)
+        self.wait(2)
 
-        def lagrange_basis(i, n):
-            c = lagrange_coefficients(n,i)
-            return polynomial("e_" + str(i),c,basis_colors[i])
-
-        lagrange_polynomials = [
-            lagrange_basis(i, len(p_data))
-            for i in range(len(p_data))
-        ]
-        lagrange_plots = [
-            plot_pol_basis_r(p)
-            for p in lagrange_polynomials
-        ]
 
         for j in range(len(p_data)):
             self.play(
@@ -225,24 +266,13 @@ class p02_0(Scene):
 
         self.play(*[FadeIn(p) for p in lagrange_plots], FadeOut(p_p), *[p.animate.set_value(0) for p in p_data])
         self.wait(2)
-        self.play(*[FadeOut(p) for p in lagrange_plots], FadeIn(p_p))
+        self.play(*[FadeOut(p) for p in lagrange_plots])
+        self.play(Transform(r_axes,r_axes_norm))
 
-        def bezier_basis(i, n):
-            c = bezier_coefficients(n,i)
-            return polynomial("e_" + str(i),c,basis_colors[i])
 
-        bezier_polynomials = [
-            bezier_basis(i, len(p_data))
-            for i in range(len(p_data))
-        ]
-        bezier_plots = [
-            plot_pol_basis_r(p)
-            for p in bezier_polynomials
-        ]
-
-        self.play(*[FadeIn(p) for p in bezier_plots], FadeOut(p_p))
+        self.play(*[FadeIn(p) for p in bezier_plots] )
         self.wait(2)
-        self.play(*[FadeOut(p) for p in bezier_plots], FadeIn(p_p))
+        self.play(*[FadeOut(p) for p in bezier_plots] )
 
         self.wait(2)
 
