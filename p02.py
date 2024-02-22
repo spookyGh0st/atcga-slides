@@ -1,4 +1,7 @@
+import random
+
 import numpy as np
+import scipy.stats
 from manim import *
 from manim_slides.slide import Slide
 from dataclasses import dataclass
@@ -6,7 +9,7 @@ from sympy import symbols
 import sympy as sympy
 
 N = 4
-basis_colors = [PURPLE, ORANGE, GREEN, MAROON]
+basis_colors = [PURPLE, ORANGE, GREEN, MAROON, GOLD, TEAL, GRAY, BLUE, ORANGE, GREEN, DARK_BROWN ]
 
 @dataclass
 class polynomial:
@@ -149,6 +152,9 @@ lagrange_plots = [
 #=======================================
 #   Bezier Basis
 #=======================================
+def besier_calc(i,n,t):
+    return scipy.special.binom(n,i)*(t**i)*((1-t)**(n-i))
+
 def bezier_coefficients(i,n):
     x = symbols('x')
     basis_polynomial = sympy.functions.combinatorial.factorials.binomial(n,i) * (x**i) * ((1-x)**(n-i))
@@ -169,6 +175,24 @@ bezier_plots = [
     plot_pol_basis_r(p, r_axes_norm)
     for p in bezier_polynomials
 ]
+
+### Basis_splines
+def norm_b_splines(r:int,i:int,t:float,T:np.ndarray)->float:
+    if (r == 0):
+        if (T[i] <= t and t < T[i+1]): # TODO
+            return 1
+        else:
+            return 0
+    else:
+        if (T[i+r]-T[i] == 0):
+            n1 = 0
+        else:
+            n1 = (t - T[i])/ (T[i+r]-T[i]) * norm_b_splines(r-1,i,t,T)
+        if ((T[i+1+r] - T[i+1]) == 0 ):
+            n2 = 0
+        else:
+            n2 = (T[i+1+r] - t) / (T[i+1+r] - T[i+1]) * norm_b_splines(r-1,i+1,t,T)
+        return n1 + n2
 
 
 class p02_0(Scene):
@@ -277,3 +301,100 @@ class p02_0(Scene):
         self.wait(2)
 
 
+
+class p02_1(Scene):
+
+    def construct(self):
+        global r_axes, r_axes_norm
+        random.seed(42)
+        n_points = 8
+        n_sec1 = 4
+        self.add(r_axes_norm,Line(UP*5, DOWN*5))
+        self.add(*bezier_plots)
+        raw_points = [ np.array([1-float(i)/n_points,random.random()]) for i in range(n_points) ]
+        points = [ Point(p[0]*LEFT*7+p[1]*UP*2+UP*2,color=basis_colors[i]) for i,p in enumerate(raw_points)]
+        self.add(*points)
+
+        def bez_curve_1(t:float) ->np.ndarray:
+            return np.sum([besier_calc(i, n_sec1-1, t) * points[i].get_center() for i in range(n_sec1)],axis=0)
+        def bez_curve_2(t:float) ->np.ndarray:
+            return np.sum([besier_calc(i, n_sec1-1, t) * points[i+n_sec1].get_center() for i in range(n_sec1)],axis=0)
+
+        bez_1 = ParametricFunction(bez_curve_1, t_range = np.array([0, 1]), fill_opacity=0).set_color(RED)
+        t = ValueTracker(0); self.add(t)
+        t_li = always_redraw(lambda: Line(r_axes_norm.c2p(t.get_value(),0),r_axes_norm.c2p(t.get_value(),1),color=RED))
+        t_dec = (DecimalNumber(t.get_value(),2)
+                 .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t.get_value()),call_updater=True))
+        self.add(t_li,t_dec)
+        self.play(Create(bez_1),t.animate.set_value(1),run_time=5)
+        self.wait(2)
+
+        t.set_value(0)
+        for i in range(len(bezier_plots)):
+            bezier_plots[i].set_color(basis_colors[i+len(bezier_plots)])
+        bez_2 = always_redraw(lambda: ParametricFunction(bez_curve_2, t_range = np.array([0, t.get_value()]), fill_opacity=0).set_color(RED))
+        self.add(bez_2); self.play(t.animate.set_value(1),run_time=2)
+
+        self.wait(2)
+        self.play(FadeOut(t_li),FadeOut(t_dec), points[4].animate.move_to(points[3].get_center()),run_time=2)
+
+        self.wait(2)
+        self.play(points[5].animate.move_to(
+            points[3].get_center()-(points[2].get_center()-points[3].get_center())
+        ),run_time=2)
+        ax = Axes(
+            x_range=[-0.5, 2.5, 1],
+            y_range=[-0, 1.01, 1],
+            x_length=6,
+            y_length=2, tips=False
+        ).to_corner(LEFT+DOWN)
+        T = np.array([0,0,0,0,1,1,1,2,2,2,2])
+        T_tex = MathTex('T = '+",".join(str(s) for s in T),font_size=0.8*DEFAULT_FONT_SIZE).next_to(ax, UP)
+        self.play(Create(ax),Write(T_tex))
+        size = len(T)-1
+        degree = 3
+        norm_b_plots = [
+            ax.plot(
+                lambda t: norm_b_splines(degree,i,t,T),
+                use_smoothing=False,
+                color=basis_colors[i],
+                discontinuities = [0,1,2],
+            )
+            for i in range(size-degree)
+        ]
+        self.play(Create(VGroup(*norm_b_plots)),run_time = 5)
+
+        self.wait()
+        self.play(*[FadeOut(p) for p in norm_b_plots],FadeOut(T_tex))
+
+
+        T = np.array([0,0,0,0,1,2,3,4,5,5,5,5]) * (2/5)
+        T_tex = MathTex('T = '+','.join(["{:.1f}".format(s) for s in T]),font_size=DEFAULT_FONT_SIZE*0.4).next_to(ax, UP)
+        size = len(T)-1
+        degree = 3
+        norm_b_plots = [
+            ax.plot(
+                lambda t: norm_b_splines(degree,i,t,T),
+                use_smoothing=False,
+                color=basis_colors[i],
+                discontinuities = [0,1,2],
+            )
+            for i in range(size-degree)
+        ]
+        self.play(Create(ax),Write(T_tex))
+        self.play(Create(VGroup(*norm_b_plots)),run_time = 1)
+        self.play(points[4].animate.move_to(points[4].get_center()+UP),run_time=1)
+
+        def b_spline_curve(t:float) ->np.ndarray:
+            return np.sum([norm_b_splines(degree,i,t,T) * points[i].get_center() for i in range(len(points))],axis=0)
+
+        b_spline_1 = ParametricFunction(b_spline_curve, t_range = np.array([0.000001, 1.9999]), fill_opacity=0).set_color(RED_A)
+        t_new = ValueTracker(0); self.add(t_new)
+        t_li = always_redraw(lambda: Line(ax.c2p(t_new.get_value(),0),ax.c2p(t_new.get_value(),1),color=RED))
+        t_dec = (DecimalNumber(t_new.get_value(),2)
+                 .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t_new.get_value()),call_updater=True))
+        self.play(Create(t_li),Create(t_dec),run_time=0.5)
+        self.play(t_new.animate.set_value(2),Create(b_spline_1),run_time=5)
+
+
+        self.wait(10)
