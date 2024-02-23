@@ -195,10 +195,10 @@ def norm_b_splines(r:int,i:int,t:float,T:np.ndarray)->float:
         return n1 + n2
 
 
-class p02_0(Scene):
+class p02_0(Slide):
     def construct(self):
         global r_axes, r_axes_norm
-        self.add(l_axes, r_axes,Line(UP*5, DOWN*5))
+        self.play(*[Create(i) for i in [l_axes, r_axes,Line(UP*5, DOWN*5)]]);
         p_data = [ValueTracker(1),ValueTracker(1), ValueTracker(0), ValueTracker(0)]
 
         def canonical_basis(i, n):
@@ -221,7 +221,7 @@ class p02_0(Scene):
         d_e1 = Dot(l_axes.c2p(0, 1),color=basis_colors[1])
         t_e0 = polynom_tex(e0).next_to(l_axes,DOWN,buff2,LEFT)
         t_e1 = polynom_tex(e1).next_to(t_e0,DOWN,buff1,LEFT)
-        self.add(d_e0,d_e1,t_e0, t_e1,e_plots[0],e_plots[1])
+        self.play(*[Create(i) for i in [d_e0,d_e1,t_e0, t_e1,e_plots[0],e_plots[1]]]); self.next_slide()
 
         self.add(*p_data)
         def get_p():
@@ -243,16 +243,16 @@ class p02_0(Scene):
         t_p4.add_updater(lambda d: d.set_value(p_data[1].get_value()))
         t_p5 = MathTex(e1.n, color=e1.col).next_to(t_p4,RIGHT)
         t_p = VGroup(t_p0,t_p1,t_p2,t_p3,t_p4,t_p5).next_to(t_e1,DOWN,buff2,LEFT)
-        self.add(d_p,p_p,t_p)
+        self.play(*[Create(i) for i in [d_p,p_p,t_p]])
+        self.next_slide()
 
         self.wait()
-        self.play(p_data[0].animate.set_value(3),run_time=2)
-        self.play(p_data[1].animate.set_value(0.5),run_time=2)
-        self.play(p_data[0].animate.set_value(1),p_data[1].animate.set_value(1),run_time=1)
+        self.play(p_data[0].animate.set_value(3),run_time=2); self.next_slide()
+        self.play(p_data[1].animate.set_value(0.5),run_time=2); self.next_slide()
+        self.play(p_data[0].animate.set_value(1),p_data[1].animate.set_value(1),run_time=1); self.next_slide()
 
-        self.wait()
         self.play(FadeOut(l_axes),FadeOut(d_e0),FadeOut(d_e1),FadeOut(d_p), FadeOut(t_p),FadeOut(t_e0),FadeOut(t_e1))
-        self.play(FadeIn(number_plane))
+        self.play(FadeIn(number_plane)); self.next_slide()
 
         e_dots = [
             Dot(color=basis_colors[i]).add_updater(lambda d, i=i: d.move_to(number_plane.c2p(i+1,p_data[i].get_value())))
@@ -266,11 +266,11 @@ class p02_0(Scene):
         ]
         self.play(Create(VGroup(*e_dots)),Create(VGroup(*e_tex)),run_time=2)
         self.play(*[Create(e) for e in e_plots[2:]],run_time=2)
-        self.wait(2)
+        self.next_slide()
 
         self.play(p_data[2].animate.set_value( 0.5),run_time=1)
         self.play(p_data[3].animate.set_value( 0.5),run_time=1)
-        self.wait(2)
+        self.next_slide()
 
 
         self.play(
@@ -279,30 +279,27 @@ class p02_0(Scene):
             p_data[3].animate.set_value(0),
             *[FadeOut(e) for e in e_plots],
             run_time=1)
-        self.wait(2)
+        self.next_slide()
 
 
         for j in range(len(p_data)):
             self.play(
                 *[p_data[i].animate.set_value(lagrange_polynomials[j].c[i]) for i in range(len(p_data))]
             )
-            self.wait(2)
+            self.wait(1)
 
         self.play(*[FadeIn(p) for p in lagrange_plots], FadeOut(p_p), *[p.animate.set_value(0) for p in p_data])
-        self.wait(2)
+        self.next_slide()
         self.play(*[FadeOut(p) for p in lagrange_plots])
         self.play(Transform(r_axes,r_axes_norm))
 
 
         self.play(*[FadeIn(p) for p in bezier_plots] )
-        self.wait(2)
-        self.play(*[FadeOut(p) for p in bezier_plots] )
-
-        self.wait(2)
+        self.next_slide()
 
 
 
-class p02_1(Scene):
+class p02_1(Slide):
 
     def construct(self):
         global r_axes, r_axes_norm
@@ -313,7 +310,7 @@ class p02_1(Scene):
         self.add(*bezier_plots)
         raw_points = [ np.array([1-float(i)/n_points,random.random()]) for i in range(n_points) ]
         points = [ Point(p[0]*LEFT*7+p[1]*UP*2+UP*2,color=basis_colors[i]) for i,p in enumerate(raw_points)]
-        self.add(*points)
+        self.play(*[FadeIn(p) for p in points], run_time=1.0)
 
         def bez_curve_1(t:float) ->np.ndarray:
             return np.sum([besier_calc(i, n_sec1-1, t) * points[i].get_center() for i in range(n_sec1)],axis=0)
@@ -325,23 +322,24 @@ class p02_1(Scene):
         t_li = always_redraw(lambda: Line(r_axes_norm.c2p(t.get_value(),0),r_axes_norm.c2p(t.get_value(),1),color=RED))
         t_dec = (DecimalNumber(t.get_value(),2)
                  .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t.get_value()),call_updater=True))
-        self.add(t_li,t_dec)
+        self.play(Create(t_li),Create(t_dec),run_time=0.5)
         self.play(Create(bez_1),t.animate.set_value(1),run_time=5)
-        self.wait(2)
+        self.next_slide()
 
         t.set_value(0)
         for i in range(len(bezier_plots)):
             bezier_plots[i].set_color(basis_colors[i+len(bezier_plots)])
         bez_2 = always_redraw(lambda: ParametricFunction(bez_curve_2, t_range = np.array([0, t.get_value()]), fill_opacity=0).set_color(RED))
-        self.add(bez_2); self.play(t.animate.set_value(1),run_time=2)
+        self.play(Create(bez_2)); self.play(t.animate.set_value(1),run_time=2)
 
-        self.wait(2)
+        self.next_slide()
         self.play(FadeOut(t_li),FadeOut(t_dec), points[4].animate.move_to(points[3].get_center()),run_time=2)
 
-        self.wait(2)
+        self.next_slide()
         self.play(points[5].animate.move_to(
             points[3].get_center()-(points[2].get_center()-points[3].get_center())
         ),run_time=2)
+        self.next_slide()
         ax = Axes(
             x_range=[-0.5, 2.5, 1],
             y_range=[-0, 1.01, 1],
@@ -351,6 +349,7 @@ class p02_1(Scene):
         T = np.array([0,0,0,0,1,1,1,2,2,2,2])
         T_tex = MathTex('T = '+",".join(str(s) for s in T),font_size=0.8*DEFAULT_FONT_SIZE).next_to(ax, UP)
         self.play(Create(ax),Write(T_tex))
+        self.next_slide()
         size = len(T)-1
         degree = 3
         norm_b_plots = [
@@ -364,7 +363,7 @@ class p02_1(Scene):
         ]
         self.play(Create(VGroup(*norm_b_plots)),run_time = 5)
 
-        self.wait()
+        self.next_slide()
         self.play(*[FadeOut(p) for p in norm_b_plots],FadeOut(T_tex))
 
 
@@ -383,7 +382,9 @@ class p02_1(Scene):
         ]
         self.play(Create(ax),Write(T_tex))
         self.play(Create(VGroup(*norm_b_plots)),run_time = 1)
+        self.next_slide()
         self.play(points[4].animate.move_to(points[4].get_center()+UP),run_time=1)
+        self.next_slide()
 
         def b_spline_curve(t:float) ->np.ndarray:
             return np.sum([norm_b_splines(degree,i,t,T) * points[i].get_center() for i in range(len(points))],axis=0)
@@ -394,7 +395,6 @@ class p02_1(Scene):
         t_dec = (DecimalNumber(t_new.get_value(),2)
                  .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t_new.get_value()),call_updater=True))
         self.play(Create(t_li),Create(t_dec),run_time=0.5)
+        self.next_slide()
         self.play(t_new.animate.set_value(2),Create(b_spline_1),run_time=5)
-
-
-        self.wait(10)
+        self.next_slide()

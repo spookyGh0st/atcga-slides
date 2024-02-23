@@ -18,9 +18,13 @@ media/videos/p01/1080p144/*
 !media/videos/p01/1080p144/p01_3.mp4
 p00_assets
 p01_assets
+p02_assets
+p03_assets
 slides
 venv
 .idea
 __pycache__/
 p00.html
 p01.html
+p02.html
+p03.html
