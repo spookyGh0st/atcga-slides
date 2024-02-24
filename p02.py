@@ -119,6 +119,15 @@ buff2 = DEFAULT_MOBJECT_TO_MOBJECT_BUFFER*2
 #=======================================
 #   Lagrange
 #=======================================
+def lagrange_calc(n,i,t):
+    numerator = 1
+    denominator = 1
+    for m in range(n):
+        if m != i:
+            numerator *= (t - m)
+            denominator *= (i - m)
+    return numerator / denominator
+
 def lagrange_coefficients(n, i):
     x = symbols('x')
     numerator = 1
@@ -175,6 +184,12 @@ bezier_plots = [
     plot_pol_basis_r(p, r_axes_norm)
     for p in bezier_polynomials
 ]
+
+random.seed(42)
+n_points = 8
+raw_points = [np.array([1 - float(i) / n_points, random.random()]) for i in range(n_points)]
+points = [Dot(p[0] * LEFT * 7 + p[1] * UP * 2 + UP * 2, color=basis_colors[i],z_index=1) for i, p in enumerate(raw_points)]
+
 
 ### Basis_splines
 def norm_b_splines(r:int,i:int,t:float,T:np.ndarray)->float:
@@ -247,8 +262,7 @@ class p02_0(Slide):
         self.next_slide()
 
         self.wait()
-        self.play(p_data[0].animate.set_value(3),run_time=2); self.next_slide()
-        self.play(p_data[1].animate.set_value(0.5),run_time=2); self.next_slide()
+        self.play(p_data[0].animate.set_value(3),p_data[1].animate.set_value(0.5),run_time=2); self.next_slide()
         self.play(p_data[0].animate.set_value(1),p_data[1].animate.set_value(1),run_time=1); self.next_slide()
 
         self.play(FadeOut(l_axes),FadeOut(d_e0),FadeOut(d_e1),FadeOut(d_p), FadeOut(t_p),FadeOut(t_e0),FadeOut(t_e1))
@@ -264,23 +278,26 @@ class p02_0(Slide):
             .add_updater(lambda d, i=i: d.set_value(p_data[i].get_value()))
             for i in range(len(p_data))
         ]
-        self.play(Create(VGroup(*e_dots)),Create(VGroup(*e_tex)),run_time=2)
-        self.play(*[Create(e) for e in e_plots[2:]],run_time=2)
+        self.play(Create(VGroup(*e_dots)),Create(VGroup(*e_tex)),run_time=1)
+        self.play(*[Create(e) for e in e_plots[2:]],run_time=1)
         self.next_slide()
 
-        self.play(p_data[2].animate.set_value( 0.5),run_time=1)
-        self.play(p_data[3].animate.set_value( 0.5),run_time=1)
+        self.play(p_data[2].animate.set_value( 0.5),run_time=0.7)
+        self.play(p_data[3].animate.set_value( 0.5),run_time=0.7)
+        self.play(p_data[0].animate.set_value( -0.5),run_time=0.7)
+        self.play(p_data[1].animate.set_value( -1.0),run_time=0.7)
         self.next_slide()
 
 
         self.play(
+            p_data[0].animate.set_value( 0),
             p_data[1].animate.set_value( 0),
             p_data[2].animate.set_value(0),
             p_data[3].animate.set_value(0),
             *[FadeOut(e) for e in e_plots],
             run_time=1)
+        self.wait(0.1)
         self.next_slide()
-
 
         for j in range(len(p_data)):
             self.play(
@@ -288,13 +305,30 @@ class p02_0(Slide):
             )
             self.wait(1)
 
-        self.play(*[FadeIn(p) for p in lagrange_plots], FadeOut(p_p), *[p.animate.set_value(0) for p in p_data])
+        self.play(*[FadeIn(p) for p in lagrange_plots],
+                  *[FadeOut(i) for i in [p_p,*e_dots,number_plane,*e_tex]],
+                  *[p.animate.set_value(0) for p in p_data])
         self.next_slide()
-        self.play(*[FadeOut(p) for p in lagrange_plots])
+
+        t = ValueTracker(0); self.add(t)
+        t_li = always_redraw(lambda: Line(r_axes.c2p(t.get_value(),0),r_axes.c2p(t.get_value(),1),color=RED))
+        t_dec = (DecimalNumber(t.get_value(),2)
+                 .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t.get_value()),call_updater=True))
+        self.play(*[FadeIn(p) for p in points[:4]], Create(t_li),Create(t_dec),run_time=1.0)
+
+        def lagrange_curve(t:float) ->np.ndarray:
+            return np.sum([lagrange_calc(4, i, t) * points[i].get_center() for i in range(4)],axis=0)
+        lag_c = always_redraw(lambda: ParametricFunction(lagrange_curve, t_range = np.array([0, 3]), fill_opacity=0).set_color(RED))
+        self.play(Create(lag_c),t.animate.set_value(3),run_time=4); self.next_slide()
+        c1 = always_redraw(lambda: Circle(radius=0.2,color=RED).move_to(points[1].get_center()))
+        c2 = always_redraw(lambda: Circle(radius=0.2,color=RED).move_to(points[2].get_center()))
+        self.play(Create(c1),Create(c2))
+        self.play(points[1].animate.shift(UP),points[2].animate.shift(DOWN*3)); self.next_slide()
+        self.play(points[1].animate.shift(DOWN),points[2].animate.shift(UP*3))
+        self.next_slide()
+
+        self.play(*[FadeOut(p) for p in lagrange_plots], *[FadeOut(i) for i in [lag_c, c1,c2, t_li,t_dec]], run_time=1.0)
         self.play(Transform(r_axes,r_axes_norm))
-
-
-        self.play(*[FadeIn(p) for p in bezier_plots] )
         self.next_slide()
 
 
@@ -303,14 +337,12 @@ class p02_1(Slide):
 
     def construct(self):
         global r_axes, r_axes_norm
-        random.seed(42)
-        n_points = 8
         n_sec1 = 4
         self.add(r_axes_norm,Line(UP*5, DOWN*5))
+        self.add(*points[:4])
         self.add(*bezier_plots)
-        raw_points = [ np.array([1-float(i)/n_points,random.random()]) for i in range(n_points) ]
-        points = [ Point(p[0]*LEFT*7+p[1]*UP*2+UP*2,color=basis_colors[i]) for i,p in enumerate(raw_points)]
-        self.play(*[FadeIn(p) for p in points], run_time=1.0)
+        self.play(*[Create(p) for p in bezier_plots] )
+        self.play(*[Create(p) for p in points[4:]], run_time=1.0)
 
         def bez_curve_1(t:float) ->np.ndarray:
             return np.sum([besier_calc(i, n_sec1-1, t) * points[i].get_center() for i in range(n_sec1)],axis=0)
@@ -322,9 +354,15 @@ class p02_1(Slide):
         t_li = always_redraw(lambda: Line(r_axes_norm.c2p(t.get_value(),0),r_axes_norm.c2p(t.get_value(),1),color=RED))
         t_dec = (DecimalNumber(t.get_value(),2)
                  .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t.get_value()),call_updater=True))
+        self.next_slide()
         self.play(Create(t_li),Create(t_dec),run_time=0.5)
         self.play(Create(bez_1),t.animate.set_value(1),run_time=5)
         self.next_slide()
+        conv_hull1 = Polygon(*[p.get_center() for p in [points[0],points[1],points[3]]],fill_opacity=0.8,z_index=-1, fill_color=ORANGE)
+        conv_hull2 = Polygon(*[r_axes_norm.c2p(0,0),r_axes_norm.c2p(1,0), r_axes_norm.c2p(1,1), r_axes_norm.c2p(0,1) ],fill_opacity=0.8,z_index=-1, fill_color=ORANGE)
+        self.play(Create(conv_hull1),Create(conv_hull2)); self.wait(0.1)
+        self.next_slide()
+        self.play(Uncreate(conv_hull1),Uncreate(conv_hull2))
 
         t.set_value(0)
         for i in range(len(bezier_plots)):
@@ -347,9 +385,7 @@ class p02_1(Slide):
             y_length=2, tips=False
         ).to_corner(LEFT+DOWN)
         T = np.array([0,0,0,0,1,1,1,2,2,2,2])
-        T_tex = MathTex('T = '+",".join(str(s) for s in T),font_size=0.8*DEFAULT_FONT_SIZE).next_to(ax, UP)
-        self.play(Create(ax),Write(T_tex))
-        self.next_slide()
+        T_tex = MathTex('T = ['+",".join(str(s) for s in T) + ']',font_size=0.8*DEFAULT_FONT_SIZE).next_to(ax, UP)
         size = len(T)-1
         degree = 3
         norm_b_plots = [
@@ -361,6 +397,7 @@ class p02_1(Slide):
             )
             for i in range(size-degree)
         ]
+        self.play(Create(ax),Write(T_tex))
         self.play(Create(VGroup(*norm_b_plots)),run_time = 5)
 
         self.next_slide()
@@ -368,7 +405,7 @@ class p02_1(Slide):
 
 
         T = np.array([0,0,0,0,1,2,3,4,5,5,5,5]) * (2/5)
-        T_tex = MathTex('T = '+','.join(["{:.1f}".format(s) for s in T]),font_size=DEFAULT_FONT_SIZE*0.4).next_to(ax, UP)
+        T_tex = MathTex('T = ['+','.join(["{:.1f}".format(s) for s in T])+']',font_size=DEFAULT_FONT_SIZE*0.4).next_to(ax, UP)
         size = len(T)-1
         degree = 3
         norm_b_plots = [
