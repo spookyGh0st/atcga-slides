@@ -57,9 +57,9 @@ def gen_omega_tex():
 def gen_boundary_tex():
     return r'{\partial \Omega}'
 def gen_u0_tex():
-    return r'u_0'
+    return r'{ g }'
 def gen_u_tex():
-    return r'{ u }'
+    return r'{ f }'
 def gen_fb_tex():
     return r'{ \Phi }'
 
@@ -88,6 +88,10 @@ class p03_0(Slide):
 
 
     def construct(self):
+        title_tex = Tex(r'\underline{Laplcace Beltrami Operator}',font_size=1.5*DEFAULT_FONT_SIZE).to_edge(UP)
+        title_tex2 = MathTex(r'\Delta f = \nabla \cdot (\nabla f) = \text{div}(\text{grad}(f))',font_size=1*DEFAULT_FONT_SIZE)
+        self.add(title_tex,title_tex2); self.wait(0.5)
+        self.next_slide(); self.play(FadeOut(title_tex),FadeOut(title_tex2),run_time=0.5)
         radius = 1.2
         open_c = Circle(fill_color=ORANGE,fill_opacity=1,stroke_opacity=0,radius=radius).to_corner(UP+LEFT)
         closed_c = Circle(stroke_color=PURPLE,fill_opacity=0,stroke_opacity=1,radius=radius).to_corner(UP+LEFT)
@@ -139,25 +143,25 @@ class p03_0(Slide):
         self.play(Transform(min1,min3),Transform(min2,min4))
         self.ns()
 
-        min5 = setColors(MathTex(r'\Leftrightarrow \text{ solve }',r'\Delta',gen_u_tex(),r'\vert_',gen_omega_tex(),'= f')).next_to(u_tex2,DOWN,buff2,LEFT)
+        min5 = setColors(MathTex(r'\Leftrightarrow \text{ solve }',r'\Delta',gen_u_tex(),r'\vert_',gen_omega_tex(),'=',gen_u0_tex())).next_to(u_tex2,DOWN,buff2,LEFT)
         self.play(Transform(min1,min5))
         self.ns()
 
-        min6 = setColors(MathTex(r'\Rightarrow \text{ solve }',r'\int_',gen_omega_tex(),r'h(x) (\Delta',gen_u_tex(),r') (x) \, dx = \int_',gen_omega_tex(),'h(x)f(x) dx')).next_to(u_tex2,DOWN,buff2,LEFT)
+        min6 = setColors(MathTex(r'\Rightarrow \text{ solve }',r'\int_',gen_omega_tex(),r'h(x) (\Delta',gen_u_tex(),r') (x) \, dx = \int_',gen_omega_tex(),'h(x)',gen_u0_tex(),r'(x) dx')).next_to(u_tex2,DOWN,buff2,LEFT)
         self.play(Transform(min1,min6),min2.animate.next_to(min6,DOWN,buff1,LEFT))
         self.ns()
 
 
-        min7 =  setColors(MathTex(r'\Rightarrow \text{ solve } -\int_', gen_omega_tex(), lang, r'(\nabla', gen_u_tex(), r')(x)\vert', r'(\nabla h)(x)', rang,r' \, dx = \int_',gen_omega_tex(),'h(x)f(x) \, dx')).next_to(u_tex2,DOWN,buff2,LEFT)
+        min7 =  setColors(MathTex(r'\Rightarrow \text{ solve } -\int_', gen_omega_tex(), lang, r'(\nabla', gen_u_tex(), r')(x)\vert', r'(\nabla h)(x)', rang,r' \, dx = \int_',gen_omega_tex(),'h(x)',gen_u0_tex(),r'(x) \, dx')).next_to(u_tex2,DOWN,buff2,LEFT)
         self.play(Transform(min1,min7),min2.animate.next_to(min7,DOWN,buff1,LEFT))
         self.ns()
 
-        min7 =  setColors(MathTex(r'\Leftrightarrow \text{solve } -' ,lang, r'h \vert', gen_u_tex(), rang,r'_\Delta',r'= \int_',gen_omega_tex(),'h(x)f(x) \, dx')).next_to(u_tex2,DOWN,buff2,LEFT)
+        min7 =  setColors(MathTex(r'\Leftrightarrow \text{solve } -' ,lang, r'h \vert', gen_u_tex(), rang,r'_\Delta',r'= \int_',gen_omega_tex(),'h(x)',gen_u0_tex(),r'(x) \, dx')).next_to(u_tex2,DOWN,buff2,LEFT)
         self.play(Transform(min1,min7),min2.animate.next_to(min7,DOWN,buff1,LEFT))
         self.ns()
 
-        self.play(*[FadeOut(x) for x in [open_c,closed_c,open_set_tex,closed_set_tex,closed_c_ur,closed_c_dr,gradient_dr,gradient_ur,u0_tex,u_tex1,u_tex2,grad_l,grad_l_d1,grad_l_d2]])
-        min8 =  setColors(MathTex(r'\text{solve }-' ,lang, r'h \vert', gen_u_tex(), rang,r'_\Delta',r'= \int_',gen_omega_tex(),'h(x)f(x) \, dx')).to_corner(UL)
+        self.play(*[FadeOut(x) for x in [open_c,closed_c,open_set_tex,closed_set_tex,closed_c_ur,closed_c_dr,gradient_dr,gradient_ur,u0_tex,u_tex1,u_tex2,grad_l,grad_l_d1,grad_l_d2,c1,c2]])
+        min8 =  setColors(MathTex(r'\text{solve }-' ,lang, r'h \vert', gen_u_tex(), rang,r'_\Delta',r'= \int_',gen_omega_tex(),'h(x)',gen_u0_tex(),r'(x) \, dx')).to_corner(UL)
         self.play(Transform(min1,min8),min2.animate.next_to(min8,DOWN,buff1,LEFT))
         self.ns()
 
@@ -215,7 +219,7 @@ class p03_1(Slide):
         self.next_slide();
         #self.wait(0.1)
     def construct(self):
-        min1 =  setColors(MathTex(r'\text{solve } -' ,lang, r'h \vert', gen_u_tex(), rang,r'_\Delta',r'= \int_',gen_omega_tex(),'h(x)f(x) \, dx')).to_corner(UL)
+        min1 =  setColors(MathTex(r'\text{solve } -' ,lang, r'h \vert', gen_u_tex(), rang,r'_\Delta',r'= \int_',gen_omega_tex(),'h(x)',gen_u0_tex(),r'(x) \, dx')).to_corner(UL)
         min2 = setColors(MathTex(r'\text{subject to }',gen_u_tex(), r'\vert_',gen_boundary_tex(),r' =',gen_u0_tex())).next_to(min1,DOWN,buff1,LEFT)
         self.add(min1,min2); self.wait()
         self.play(*[Create(i) for i in dots],*[Create(i) for i in m_simplices])
@@ -264,7 +268,7 @@ class p03_2(Slide):
         M_entr = M.get_entries()
         r1 = SurroundingRectangle(M_entr[0])
         M_tex1 = [
-            setColors(MathTex(r'M_{',str(i+1),',',str(j+1), r'}= -\int_',gen_omega_tex(),lang,r'\nabla',gen_fb_tex(),r'_',str(i+1),r'(x) \vert \nabla',gen_fb_tex(),'_',str(j+1),'(x)',rang, '\, dx')).next_to(M,DOWN,buff2,LEFT)
+            setColors(MathTex(''.join([r'S_{',str(i+1),',',str(j+1), r'}= -\int_',gen_omega_tex(),lang,r'\nabla',gen_fb_tex(),r'_',str(i+1),r'(x) \vert \nabla',gen_fb_tex(),'_',str(j+1),'(x)',rang, '\, dx']))).next_to(M,DOWN,buff2,LEFT)
             for j in range(2) for i in range(2)
         ]
         M_tex2 = [

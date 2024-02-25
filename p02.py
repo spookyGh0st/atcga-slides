@@ -11,6 +11,7 @@ import sympy as sympy
 
 N = 4
 basis_colors = [PURPLE, ORANGE, GREEN, MAROON, GOLD, TEAL, GRAY, BLUE, ORANGE, GREEN, DARK_BROWN ]
+bez_bassis_colors = [PURPLE, ORANGE, GREEN, GOLD, TEAL, GRAY, BLUE, ORANGE, GREEN, DARK_BROWN ]
 
 @dataclass
 class polynomial:
@@ -190,19 +191,18 @@ random.seed(42)
 n_points = 8
 raw_points = [np.array([1 - float(i) / n_points, random.random()]) for i in range(n_points)]
 points = [Dot(p[0] * LEFT * 7 + p[1] * UP * 2 + UP * 2, color=basis_colors[i],z_index=1) for i, p in enumerate(raw_points)]
-points_x = [p.get_center()[0] for p in points]
-points_y = [p.get_center()[1] for p in points]
-def quad_b_spline():
-    phi = np.linspace(0,1,n_points)
-    b0 = scipy.interpolate.make_interp_spline(phi, np.c_[points_x,points_y])
-    b1 = scipy.interpolate.make_interp_spline(phi, np.c_[points_x,points_y])
-    b2 = scipy.interpolate.make_interp_spline(phi, np.c_[points_x,points_y])
-    b1 = b1.derivative(1)
-    b2 = b2.derivative(2)
-    return b0,b1,b2
+points_xyz = np.array([np.array([p.get_center()[0],p.get_center()[1],0]) for p in points])
 
-
-
+raw_points_2 = [np.array([1 - float(i) / n_points, random.random()]) for i in range(n_points)]
+points2 = [Dot(p[0] * LEFT * 6 + p[1] * UP * 1 + UP *0.5, color=basis_colors[i],z_index=1) for i, p in enumerate(raw_points_2)]
+points2_xyz = np.array([np.array([p.get_center()[0],p.get_center()[1],0]) for p in points2])
+raw_points_3 = [np.array([1 - float(i) / n_points, random.random()]) for i in range(n_points)]
+points3 = [Dot(p[0] * LEFT * 6 + p[1] * UP * 1 + UP *-1, color=basis_colors[i],z_index=1) for i, p in enumerate(raw_points_3)]
+points3_xyz = np.array([np.array([p.get_center()[0],p.get_center()[1],0]) for p in points3])
+raw_points_4 = [np.array([1 - float(i) / n_points, random.random()]) for i in range(n_points)]
+points4 = [Dot(p[0] * LEFT * 6 + p[1] * UP * 1 + UP *-3, color=basis_colors[i],z_index=1) for i, p in enumerate(raw_points_4)]
+points4_xyz = np.array([np.array([p.get_center()[0],p.get_center()[1],0]) for p in points4])
+pointsmat = np.array([points_xyz,points2_xyz,points3_xyz,points4_xyz])
 
 ### Basis_splines
 def norm_b_splines(r:int,i:int,t:float,T:np.ndarray)->float:
@@ -225,8 +225,11 @@ def norm_b_splines(r:int,i:int,t:float,T:np.ndarray)->float:
 
 class p02_0(Slide):
     def construct(self):
+        title_tex = Tex(r'\underline{Parametric Curves}',font_size=1.5*DEFAULT_FONT_SIZE).to_edge(UP)
+        self.add(title_tex); self.wait(0.5)
+        self.next_slide()
         global r_axes, r_axes_norm
-        self.play(*[Create(i) for i in [l_axes, r_axes,Line(UP*5, DOWN*5)]]);
+        self.play(*[Create(i) for i in [l_axes, r_axes,Line(UP*5, DOWN*5)]],FadeOut(title_tex));
         p_data = [ValueTracker(1),ValueTracker(1), ValueTracker(0), ValueTracker(0)]
 
         def canonical_basis(i, n):
@@ -382,13 +385,13 @@ class p02_1(Slide):
         conv_hull2 = Polygon(*[r_axes_norm.c2p(0,0),r_axes_norm.c2p(1,0), r_axes_norm.c2p(1,1), r_axes_norm.c2p(0,1) ],fill_opacity=0.8,z_index=-1, fill_color=ORANGE)
         self.play(Create(conv_hull1),Create(conv_hull2)); self.wait(0.1)
         self.next_slide()
-        self.play(Uncreate(conv_hull1),Uncreate(conv_hull2))
+        self.play(Uncreate(conv_hull1),Uncreate(conv_hull2)); self.next_slide()
 
         t.set_value(0)
         for i in range(len(bezier_plots)):
             bezier_plots[i].set_color(basis_colors[i+len(bezier_plots)])
         bez_2 = always_redraw(lambda: ParametricFunction(bez_curve_2, t_range = np.array([0, t.get_value()]), fill_opacity=0).set_color(RED))
-        self.play(Create(bez_2)); self.play(t.animate.set_value(1),run_time=2)
+        self.play(Create(bez_2)); self.play(t.animate.set_value(1),run_time=2); self.wait(0.2)
 
         self.next_slide()
         self.play(FadeOut(t_li),FadeOut(t_dec), points[4].animate.move_to(points[3].get_center()),run_time=2)
@@ -411,8 +414,8 @@ class p02_1(Slide):
         norm_b_plots = [
             ax.plot(
                 lambda t: norm_b_splines(degree,i,t,T),
-                use_smoothing=False,
-                color=basis_colors[i],
+                use_smoothing=True,x_range=(.0001,1.9999,0.01),
+                color=bez_bassis_colors[i],
                 discontinuities = [0,1,2],
             )
             for i in range(size-degree)
@@ -431,7 +434,7 @@ class p02_1(Slide):
         norm_b_plots = [
             ax.plot(
                 lambda t: norm_b_splines(degree,i,t,T),
-                use_smoothing=False,
+                use_smoothing=True,x_range=(.0001,1.9999,0.01),
                 color=basis_colors[i],
                 discontinuities = [0,1,2],
             )
@@ -458,20 +461,30 @@ class p02_1(Slide):
 
 class p02_2(Slide):
     def construct(self):
-        ax = Axes(
-            x_range=[-0.1, 1.1, 1],
-            y_range=[-0, 4.01, 1],
-            x_length=5,
-            y_length=5, tips=False
-        ).to_edge(RIGHT)
-        self.add(ax,Line(UP*5, DOWN*5))
+        N = 2**12
+        T = np.array([0, 0, 0, 0, 1, 2, 3, 4, 5, 5, 5, 5]) * (1./5)
+        degree = 3
+        axLD = Axes( x_range=[-0.1, 1.1, 1], y_range=[-0.1, 1.1, 1], x_length=6, y_length=2, tips=False ).to_corner(LEFT+DOWN)
+        axR = Axes( x_range=[-0.1, 1.1, 1], y_range=[-0, 1.51, 1], x_length=5, y_length=5, tips=False ).to_edge(RIGHT)
+        norm_b_plots = [
+            axLD.plot(
+                lambda t: norm_b_splines(degree,i,t,T),
+                use_smoothing=True,x_range=(.0001,0.9999,0.01),
+                color=basis_colors[i],
+                discontinuities = [0,0.5,1],
+            )
+            for i in range(len(T)-1-degree)
+        ]
+
+        self.add(axR,Line(UP*5, DOWN*5),axLD,*norm_b_plots)
         self.add(*points)
-        b0,b1,b2 = quad_b_spline()
-        N = 4*32
-        phi_new = np.linspace(0,1,4*32)
-        x,y = b0(phi_new).T; c = np.column_stack((x,y,np.zeros(N)))
-        x,y = b1(phi_new).T; dc = np.column_stack((x,y,np.zeros(N)))
-        x,y = b2(phi_new).T; ddc = np.column_stack((x,y,np.zeros(N)))
+
+        spline = scipy.interpolate.BSpline(T, points_xyz, 3)
+        t_vals = np.linspace(T.min(), T.max(), N)
+        c = spline(t_vals)
+        dc = spline.derivative(nu=1)(t_vals)
+        ddc = spline.derivative(nu=2)(t_vals)
+
         kur = np.divide(np.linalg.norm(np.cross(ddc, dc),axis=1), np.power(np.linalg.norm(dc,axis=1),3))
 
         def c_kur(t:float):
@@ -492,17 +505,71 @@ class p02_2(Slide):
         def c_ddc_norm(t):
             return ddc[int(t*(N-1))] / 200 #np.linalg.norm(ddc[int(t*(N-1))])
         v_t = ValueTracker(0); self.add(v_t)
+        man_c_dot = Dot(c_c(v_t.get_value()),color=WHITE).add_updater(lambda d: d.move_to(c_c(v_t.get_value())))
         man_dc = always_redraw(lambda : Arrow(c_c(v_t.get_value()),c_c(v_t.get_value())+c_dc_norm(v_t.get_value()),buff=0,color=MAROON))
+        tex_dc = MathTex('p\'(t)',color=MAROON,font_size=DEFAULT_FONT_SIZE*0.5).add_updater(lambda o: o.move_to(c_c(v_t.get_value())+c_dc_norm(v_t.get_value())))
         man_ddc = always_redraw(lambda: Arrow(c_c(v_t.get_value())+c_dc_norm(v_t.get_value()),c_c(v_t.get_value())+c_dc_norm(v_t.get_value())+c_ddc_norm(v_t.get_value()),buff=0,color=RED_B))
+        tex_ddc = MathTex('p\'\'(t)',color=RED_B,font_size=DEFAULT_FONT_SIZE*0.5).add_updater(lambda o: o.move_to(c_c(v_t.get_value())+c_dc_norm(v_t.get_value())+c_ddc_norm(v_t.get_value())))
+        man_c1 = ParametricFunction(lambda t: c_c(t),np.array([0,.5]),color=WHITE)
+        man_c2 = ParametricFunction(lambda t: c_c(t),np.array([0.5,1]),color=WHITE)
+        man_kur = axR.plot(c_kur,np.array([0,1]),color=GOLD,z_index=1)
+
+        t_li1 = always_redraw(lambda: Line(axLD.c2p(v_t.get_value(),0),axLD.c2p(v_t.get_value(),1),color=RED))
+        t_dec1 = (DecimalNumber(v_t.get_value(),2) .add_updater(lambda d: d.next_to(t_li1,DOWN).set_value(v_t.get_value()),call_updater=True))
+        self.add(t_li1,t_dec1)
+
+        self.play(Create(man_dc),Create(man_ddc), Create(man_c_dot),Create(tex_dc),Create(tex_ddc))
+        self.next_slide()
+        self.play(Create(man_c1),v_t.animate.set_value(0.5),run_time=5)
+        self.next_slide()
         man_N = always_redraw(lambda : Arrow(c_c(v_t.get_value()),c_c(v_t.get_value())+c_N(v_t.get_value()),buff=0,color=GREEN))
-        man_c = ParametricFunction(lambda t: c[int(t*(N-1))],np.array([0,1]),color=RED)
-        man_kur = ax.plot(c_kur,np.array([0,1]),color=GOLD,z_index=1)
-
-        t_li = always_redraw(lambda: Line(ax.c2p(v_t.get_value(),0),ax.c2p(v_t.get_value(),1),color=RED))
-        t_dec = (DecimalNumber(v_t.get_value(),2)
-                 .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(v_t.get_value()),call_updater=True))
         circ = always_redraw(lambda: Circle(z_index = 2, color=ORANGE, radius = 1./c_kur(v_t.get_value())).move_to(c_c(v_t.get_value())+1./c_kur(v_t.get_value())*c_N(v_t.get_value()))) #+c_ddc(v_t.get_value())/c_kur(v_t.get_value()))
+        t_li2 = always_redraw(lambda: Line(axR.c2p(v_t.get_value(),0),axR.c2p(v_t.get_value(),1.5),color=RED))
+        t_dec2 = (DecimalNumber(v_t.get_value(),2) .add_updater(lambda d: d.next_to(t_li2,DOWN).set_value(v_t.get_value()),call_updater=True))
+        N_tex = MathTex(r"N(t) = {T'(t) \over ||T'(t) || } \quad \kappa(t) = { {|| p''(t) \times p'(t) }|| \over {||p'(t)||^3}}",font_size=0.7 *DEFAULT_FONT_SIZE).next_to(axLD,UP,buff2,LEFT)
+        self.play(Create(man_N),Create(circ),Create(man_kur),Create(t_li2),Create(t_dec2),Create(N_tex))
+        self.next_slide()
+        self.play(Create(man_c2),v_t.animate.set_value(1),run_time=5)
+        self.next_slide();
 
-        self.add(man_dc,man_ddc,man_N,man_kur,t_li,t_dec,circ)
-        self.play(Create(man_c),v_t.animate.set_value(1),run_time=10)
+        tens_tex_1 = MathTex(r'&p(t) = \sum_{i=0}^m P_i N_i^d(t) \\ &\text{where } t \in [a,b]').to_edge(UP).shift(RIGHT*2.2)
+        tens_tex_2 = MathTex(r'&\Rightarrow \text{Tensor Product Space} \\ &p(u,v) = \sum_{i=0}^m \sum_{j=0}^n P_{i,j} (N_i^d(t) \cdot N_j^d(t)) \\ &\text{where } (u,v) \in [a,b] \times [c,d]',font_size=0.8*DEFAULT_FONT_SIZE).next_to(tens_tex_1,DOWN,buff2,LEFT)
+        self.play(*[FadeOut(i) for i in [axR,man_kur,t_li2,t_dec2,man_N,circ,man_c1,man_c2,man_dc,man_ddc,man_c_dot,tex_dc,tex_ddc,axLD,*norm_b_plots,t_li1,t_dec2,N_tex]])
+        self.play(Create(tens_tex_1))
+        self.next_slide()
+        self.play(Create(tens_tex_2))
+        self.next_slide()
+        self.play(Create(VGroup(*points2)),run_time = 0.5)
+        self.play(Create(VGroup(*points3)),run_time = 0.5)
+        self.play(Create(VGroup(*points4)),run_time = 0.5)
+        self.next_slide()
+
+        n_hor = 8
+        n_ver = 4
+        T_hoz = T;
+        T_ver = np.array([0, 0, 0, 0, 1, 1, 1, 1]) * (1./1)
+        spl_ver = [
+            scipy.interpolate.BSpline(T_ver, pointsmat[:, i], 3)
+            for i in range(n_hor)
+        ]
+        spl_hor = [
+            scipy.interpolate.BSpline(T_hoz, pointsmat[i], 3)
+            for i in range(n_ver)
+        ]
+        t_hor = np.linspace(T.min(), T.max(), N)
+        c_hor = [spl_hor[i](t_hor) for i in range(n_ver)]
+
+        t_ver = np.linspace(T.min(), T.max(), N)
+        c_ver = [spl_ver[i](t_ver) for i in range(n_hor)]
+
+        def c_c_hor(t:float,i:int):
+            return c_hor[i][int(t*(N-1))]
+        def c_c_ver(t:float,i:int):
+            return c_ver[i][int(t*(N-1))]
+
+        man_c_hor = [ParametricFunction(lambda t,i=i: c_c_hor(t,i),np.array([0,1]),color=WHITE) for i in range(n_ver)]
+        man_c_ver = [ParametricFunction(lambda t,i=i: c_c_ver(t,i),np.array([0,1]),color=WHITE) for i in range(n_hor)]
+        self.play(*[Create(i) for i in man_c_hor + man_c_ver],run_time= 4)
+
+
 
