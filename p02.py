@@ -282,7 +282,7 @@ class p02_0(Slide):
         self.play(p_data[0].animate.set_value(1),p_data[1].animate.set_value(1),run_time=1); self.next_slide()
 
         self.play(FadeOut(l_axes),FadeOut(d_e0),FadeOut(d_e1),FadeOut(d_p), FadeOut(t_p),FadeOut(t_e0),FadeOut(t_e1))
-        self.play(FadeIn(number_plane)); self.next_slide()
+        self.play(FadeIn(number_plane));
 
         e_dots = [
             Dot(color=basis_colors[i]).add_updater(lambda d, i=i: d.move_to(number_plane.c2p(i+1,p_data[i].get_value())))
@@ -294,8 +294,9 @@ class p02_0(Slide):
             .add_updater(lambda d, i=i: d.set_value(p_data[i].get_value()))
             for i in range(len(p_data))
         ]
-        self.play(Create(VGroup(*e_dots)),Create(VGroup(*e_tex)),run_time=1)
-        self.play(*[Create(e) for e in e_plots[2:]],run_time=1)
+        p_f_tex = MathTex(r'p(t)',r'= \sum_{i = 0}^n \alpha_i e_i',font_size=DEFAULT_FONT_SIZE*0.8).set_color_by_tex('p(t)',BLUE).to_corner(DL)
+        self.play(Create(VGroup(*e_dots)),Create(VGroup(*e_tex)), Create(p_f_tex),run_time=1)
+        self.play(Create(VGroup(*e_plots[2:])),run_time=1)
         self.next_slide()
 
         self.play(p_data[2].animate.set_value( 0.5),run_time=0.7)
@@ -319,21 +320,24 @@ class p02_0(Slide):
             self.play(
                 *[p_data[i].animate.set_value(lagrange_polynomials[j].c[i]) for i in range(len(p_data))]
             )
-            self.wait(1)
+            self.wait(0.8)
 
         lagr_tex = MathTex(r'L_i^n(t) = ',r'{{(t-t_0) \ldots (t-t_{i-1})(t-t_{i+1}) \ldots (t-t_n)} \over',
                            r'(t_i-t_0) \ldots (t_i-t_{i-1})(t_i-t_{i+1}) \ldots (t_i-t_n)}}',font_size=DEFAULT_FONT_SIZE/2).to_corner(DL)
         lagr_tex2 = MathTex(r'p(t) = \sum_{i=0}^n P_i L_i^n(t)',font_size=DEFAULT_FONT_SIZE/2).to_corner(DL).next_to(lagr_tex,UP,buff2,LEFT)
-        self.play(*[FadeIn(p) for p in lagrange_plots],
-                  *[FadeOut(i) for i in [p_p,*e_dots,number_plane,*e_tex]],
-                  *[p.animate.set_value(0) for p in p_data],Create(lagr_tex), Create(lagr_tex2))
-        self.next_slide()
-
+        lagr_tex3 = MathTex(r'\text{\underline{Lagrange-Polynomial}}',font_size=DEFAULT_FONT_SIZE/2).next_to(lagr_tex2,UP,buff2,LEFT)
         t = ValueTracker(0); self.add(t)
         t_li = always_redraw(lambda: Line(r_axes.c2p(t.get_value(),0),r_axes.c2p(t.get_value(),1),color=RED))
         t_dec = (DecimalNumber(t.get_value(),2)
                  .add_updater(lambda d: d.next_to(t_li,DOWN).set_value(t.get_value()),call_updater=True))
-        self.play(*[FadeIn(p) for p in points[:4]], Create(t_li),Create(t_dec),run_time=1.0)
+        self.play(*[FadeIn(p) for p in lagrange_plots],
+                  *[FadeOut(i) for i in [p_p,*e_dots,number_plane,*e_tex]],
+                  *[p.animate.set_value(0) for p in p_data],
+                  Create(lagr_tex), TransformMatchingShapes(p_f_tex,lagr_tex2), Create(lagr_tex3),
+                  *[FadeIn(p) for p in points[:4]], Create(t_li), Create(t_dec), run_time=1.0
+                  )
+        self.next_slide()
+
 
 
         def lagrange_curve(t:float) ->np.ndarray:
@@ -347,7 +351,7 @@ class p02_0(Slide):
         self.play(points[1].animate.shift(DOWN),points[2].animate.shift(UP*3))
         self.next_slide()
 
-        self.play(*[FadeOut(p) for p in lagrange_plots], FadeOut(lagr_tex),FadeOut(lagr_tex2), *[FadeOut(i) for i in [lag_c, c1,c2, t_li,t_dec]], run_time=1.0)
+        self.play(*[FadeOut(p) for p in lagrange_plots], FadeOut(lagr_tex),FadeOut(lagr_tex2), FadeOut(lagr_tex3), *[FadeOut(i) for i in [lag_c, c1,c2, t_li,t_dec]], run_time=1.0)
         self.play(Transform(r_axes,r_axes_norm))
         self.next_slide()
 
@@ -361,9 +365,10 @@ class p02_1(Slide):
         self.add(r_axes_norm,Line(UP*5, DOWN*5))
         self.add(*points[:4])
         self.add(*bezier_plots)
-        bez_bas_tex = MathTex(r'B_i^n(t) = \binom{n}{i} t^i (1-t)^{n-1}').to_corner(DL)
-        bez_bas_tex2 = MathTex(r'p(t) = \sum^n_{i=0} P_i B^n_i(t)').next_to(bez_bas_tex,UP,buff2,LEFT)
-        self.play(*[Create(p) for p in bezier_plots] ,Create(bez_bas_tex))
+        bez_bas_tex = MathTex(r'B_i^n(t) = \binom{n}{i} t^i (1-t)^{n-1}',font_size=DEFAULT_FONT_SIZE/2).to_corner(DL)
+        bez_bas_tex2 = MathTex(r'p(t) = \sum^n_{i=0} P_i B^n_i(t)',font_size=DEFAULT_FONT_SIZE/2).next_to(bez_bas_tex,UP,buff2,LEFT)
+        bez_bas_tex3 = MathTex(r'\text{\underline{Bézier curves}}',font_size=DEFAULT_FONT_SIZE/2).next_to(bez_bas_tex2,UP,buff2,LEFT)
+        self.play(*[Create(p) for p in bezier_plots] ,Create(bez_bas_tex), Create(bez_bas_tex3)); self.next_slide()
         self.play(*[Create(p) for p in points[4:]],Create(bez_bas_tex2), run_time=1.0)
 
 
@@ -399,7 +404,7 @@ class p02_1(Slide):
         self.next_slide()
         self.play(points[5].animate.move_to(
             points[3].get_center()-(points[2].get_center()-points[3].get_center())
-        ),FadeOut(bez_bas_tex),FadeOut(bez_bas_tex2),run_time=2)
+        ),FadeOut(bez_bas_tex),FadeOut(bez_bas_tex2),FadeOut(bez_bas_tex3),run_time=2)
         self.next_slide()
         ax = Axes(
             x_range=[-0.5, 2.5, 1],
@@ -534,7 +539,7 @@ class p02_2(Slide):
 
         tens_tex_1 = MathTex(r'&p(t) = \sum_{i=0}^m P_i N_i^d(t) \\ &\text{where } t \in [a,b]').to_edge(UP).shift(RIGHT*2.2)
         tens_tex_2 = MathTex(r'&\Rightarrow \text{Tensor Product Space} \\ &p(u,v) = \sum_{i=0}^m \sum_{j=0}^n P_{i,j} (N_i^d(t) \cdot N_j^d(t)) \\ &\text{where } (u,v) \in [a,b] \times [c,d]',font_size=0.8*DEFAULT_FONT_SIZE).next_to(tens_tex_1,DOWN,buff2,LEFT)
-        self.play(*[FadeOut(i) for i in [axR,man_kur,t_li2,t_dec2,man_N,circ,man_c1,man_c2,man_dc,man_ddc,man_c_dot,tex_dc,tex_ddc,axLD,*norm_b_plots,t_li1,t_dec2,N_tex]])
+        self.play(*[FadeOut(i) for i in [axR,man_kur,t_li2,t_dec2,man_N,circ,man_c1,man_c2,man_dc,man_ddc,man_c_dot,tex_dc,tex_ddc,axLD,*norm_b_plots,t_li1,t_dec1,N_tex]])
         self.play(Create(tens_tex_1))
         self.next_slide()
         self.play(Create(tens_tex_2))
